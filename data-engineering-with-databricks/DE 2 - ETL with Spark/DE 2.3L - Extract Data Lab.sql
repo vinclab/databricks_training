@@ -73,8 +73,18 @@
 
 -- COMMAND ----------
 
--- TODO
-<FILL_IN> "${DA.paths.kafka_events}" 
+CREATE OR REPLACE TEMPORARY VIEW events_json (
+  key BINARY,
+  offset LONG,
+  partition INTEGER,
+  timestamp LONG,
+  topic STRING,
+  value BINARY
+)
+USING json
+OPTIONS (path="${DA.paths.kafka_events}")
+
+
 
 -- COMMAND ----------
 
