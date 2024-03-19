@@ -101,12 +101,67 @@
 
 -- COMMAND ----------
 
--- TODO
-CREATE OR REPLACE TEMP VIEW events_pivot
-<FILL_IN>
-("cart", "pillows", "login", "main", "careers", "guest", "faq", "down", "warranty", "finalize", 
-"register", "shipping_info", "checkout", "mattresses", "add_item", "press", "email_coupon", 
-"cc_info", "foam", "reviews", "original", "delivery", "premium")
+SELECT * FROM events
+
+-- COMMAND ----------
+
+SELECT collect_set(event_name) AS all_event_name FROM events
+
+-- COMMAND ----------
+
+CREATE OR REPLACE TEMP VIEW events_grouping AS
+SELECT user_id, event_name, count(event_name) AS event_name_count
+FROM events
+GROUP BY user_id, event_name;
+
+SELECT * FROM events_grouping
+
+-- COMMAND ----------
+
+CREATE OR REPLACE TEMP VIEW events_pivot AS
+
+SELECT user_id AS user, cart, pillows, login, main, careers, guest, faq, down, warranty, finalize, register, shipping_info, checkout, mattresses, add_item, press, email_coupon, cc_info, foam, reviews, original, delivery, premium 
+FROM(
+
+SELECT * FROM events_grouping
+PIVOT(
+    first(event_name_count) FOR event_name IN (
+    "cart", "pillows", "login", "main", "careers", "guest", "faq", "down", "warranty", "finalize", "register", "shipping_info", "mattresses", "checkout", "add_item", "cc_info", "email_coupon", "press", "foam", "reviews", "original", "delivery", "premium"    
+    )
+)
+
+);
+
+SELECT * FROM events_pivot
+
+-- COMMAND ----------
+
+-- MAGIC %md
+-- MAGIC CREATE OR REPLACE TEMP VIEW events_pivot AS
+-- MAGIC
+-- MAGIC SELECT user_id AS user, cart, pillows, login, main, careers, guest, faq, down, warranty, finalize, register, shipping_info, checkout, mattresses, add_item, press, email_coupon, cc_info, foam, reviews, original, delivery, premium 
+-- MAGIC FROM(
+-- MAGIC
+-- MAGIC SELECT *
+-- MAGIC FROM(
+-- MAGIC SELECT user_id, event_name, count(event_name) AS event_name_count
+-- MAGIC FROM events
+-- MAGIC GROUP BY user_id, event_name
+-- MAGIC )
+-- MAGIC
+-- MAGIC PIVOT(
+-- MAGIC     first(event_name_count) FOR event_name IN (
+-- MAGIC     "cart", "pillows", "login", "main", "careers", "guest", "faq", "down", "warranty", "finalize", "register", "shipping_info", "mattresses", "checkout", "add_item", "cc_info", "email_coupon", "press", "foam", "reviews", "original", "delivery", "premium"    
+-- MAGIC     )
+-- MAGIC )
+-- MAGIC
+-- MAGIC );
+-- MAGIC
+-- MAGIC SELECT * FROM events_pivot
+
+-- COMMAND ----------
+
+SELECT count(*) FROM events_pivot
 
 -- COMMAND ----------
 
@@ -119,9 +174,27 @@ CREATE OR REPLACE TEMP VIEW events_pivot
 
 -- MAGIC %python
 -- MAGIC # TODO
--- MAGIC (spark.read
--- MAGIC     <FILL_IN>
--- MAGIC     .createOrReplaceTempView("events_pivot"))
+-- MAGIC
+-- MAGIC events_df = spark.read.table("events")
+-- MAGIC
+-- MAGIC events_df = (events_df.groupBy("user_id")
+-- MAGIC                         .pivot("event_name")
+-- MAGIC                         .count()
+-- MAGIC                         .withColumnRenamed("user_id", "user")
+-- MAGIC )
+-- MAGIC
+-- MAGIC events_df = events_df.select(
+-- MAGIC "user", "cart", "pillows", "login", "main", "careers", "guest", "faq", "down", "warranty", "finalize", 
+-- MAGIC "register", "shipping_info", "checkout", "mattresses", "add_item", "press", "email_coupon", 
+-- MAGIC "cc_info", "foam", "reviews", "original", "delivery", "premium"
+-- MAGIC ).createOrReplaceTempView("events_pivot")
+-- MAGIC
+-- MAGIC display(spark.table("events_pivot"))
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC spark.table("events_pivot").count()
 
 -- COMMAND ----------
 
@@ -173,6 +246,10 @@ CREATE OR REPLACE TEMP VIEW events_pivot
 
 -- COMMAND ----------
 
+SELECT * FROM transactions
+
+-- COMMAND ----------
+
 -- DBTITLE 0,--i18n-03571117-301e-4c35-849a-784621656a83
 -- MAGIC %md
 -- MAGIC
@@ -182,7 +259,15 @@ CREATE OR REPLACE TEMP VIEW events_pivot
 
 -- TODO
 CREATE OR REPLACE TEMP VIEW clickpaths AS
-<FILL_IN>
+SELECT * FROM events_pivot a
+INNER JOIN transactions b
+ON a.user = b.user_id;
+
+SELECT * FROM clickpaths
+
+-- COMMAND ----------
+
+SELECT count(*) FROM clickpaths
 
 -- COMMAND ----------
 
@@ -195,9 +280,21 @@ CREATE OR REPLACE TEMP VIEW clickpaths AS
 
 -- MAGIC %python
 -- MAGIC # TODO
--- MAGIC (spark.read
--- MAGIC     <FILL_IN>
--- MAGIC     .createOrReplaceTempView("clickpaths"))
+-- MAGIC event_pivot_df = spark.read.table("events_pivot")
+-- MAGIC
+-- MAGIC transactions_df = spark.read.table("transactions")
+-- MAGIC
+-- MAGIC (
+-- MAGIC event_pivot_df.join(
+-- MAGIC     transactions_df, event_pivot_df.user == transactions_df.user_id
+-- MAGIC )
+-- MAGIC
+-- MAGIC ).createOrReplaceTempView("clickpaths")
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC spark.read.table("clickpaths").count()
 
 -- COMMAND ----------
 
