@@ -52,10 +52,17 @@
 
 -- COMMAND ----------
 
-CREATE OR REPLACE TEMP VIEW events_strings AS 
-SELECT string(key), string(value) FROM events_raw;
-
-SELECT * FROM events_strings
+CREATE
+OR REPLACE TEMP VIEW events_strings AS
+SELECT
+  string(key),
+  string(value)
+FROM
+  events_raw;
+SELECT
+  *
+FROM
+  events_strings
 
 -- COMMAND ----------
 
@@ -90,7 +97,16 @@ SELECT * FROM events_strings
 
 -- COMMAND ----------
 
-SELECT * FROM events_strings WHERE value:event_name = "finalize" ORDER BY key LIMIT 1
+SELECT
+  *
+FROM
+  events_strings
+WHERE
+  value :event_name = "finalize"
+ORDER BY
+  key
+LIMIT
+  1
 
 -- COMMAND ----------
 
@@ -114,15 +130,31 @@ SELECT * FROM events_strings WHERE value:event_name = "finalize" ORDER BY key LI
 
 -- COMMAND ----------
 
-SELECT schema_of_json('{"device":"Linux","ecommerce":{"purchase_revenue_in_usd":1075.5,"total_item_quantity":1,"unique_items":1},"event_name":"finalize","event_previous_timestamp":1593879231210816,"event_timestamp":1593879335779563,"geo":{"city":"Houston","state":"TX"},"items":[{"coupon":"NEWBED10","item_id":"M_STAN_K","item_name":"Standard King Mattress","item_revenue_in_usd":1075.5,"price_in_usd":1195.0,"quantity":1}],"traffic_source":"email","user_first_touch_timestamp":1593454417513109,"user_id":"UA000000106116176"}') AS schema
+SELECT
+  schema_of_json(
+    '{"device":"Linux","ecommerce":{"purchase_revenue_in_usd":1075.5,"total_item_quantity":1,"unique_items":1},"event_name":"finalize","event_previous_timestamp":1593879231210816,"event_timestamp":1593879335779563,"geo":{"city":"Houston","state":"TX"},"items":[{"coupon":"NEWBED10","item_id":"M_STAN_K","item_name":"Standard King Mattress","item_revenue_in_usd":1075.5,"price_in_usd":1195.0,"quantity":1}],"traffic_source":"email","user_first_touch_timestamp":1593454417513109,"user_id":"UA000000106116176"}'
+  ) AS schema
 
 -- COMMAND ----------
 
-CREATE OR REPLACE TEMP VIEW parsed_events AS SELECT json.* FROM (
-SELECT from_json(value, 'STRUCT<device: STRING, ecommerce: STRUCT<purchase_revenue_in_usd: DOUBLE, total_item_quantity: BIGINT, unique_items: BIGINT>, event_name: STRING, event_previous_timestamp: BIGINT, event_timestamp: BIGINT, geo: STRUCT<city: STRING, state: STRING>, items: ARRAY<STRUCT<coupon: STRING, item_id: STRING, item_name: STRING, item_revenue_in_usd: DOUBLE, price_in_usd: DOUBLE, quantity: BIGINT>>, traffic_source: STRING, user_first_touch_timestamp: BIGINT, user_id: STRING>') AS json 
-FROM events_strings);
-
-SELECT * FROM parsed_events
+CREATE
+OR REPLACE TEMP VIEW parsed_events AS
+SELECT
+  json.*
+FROM
+  (
+    SELECT
+      from_json(
+        value,
+        'STRUCT<device: STRING, ecommerce: STRUCT<purchase_revenue_in_usd: DOUBLE, total_item_quantity: BIGINT, unique_items: BIGINT>, event_name: STRING, event_previous_timestamp: BIGINT, event_timestamp: BIGINT, geo: STRUCT<city: STRING, state: STRING>, items: ARRAY<STRUCT<coupon: STRING, item_id: STRING, item_name: STRING, item_revenue_in_usd: DOUBLE, price_in_usd: DOUBLE, quantity: BIGINT>>, traffic_source: STRING, user_first_touch_timestamp: BIGINT, user_id: STRING>'
+      ) AS json
+    FROM
+      events_strings
+  );
+SELECT
+  *
+FROM
+  parsed_events
 
 -- COMMAND ----------
 
@@ -153,11 +185,19 @@ SELECT * FROM parsed_events
 
 -- COMMAND ----------
 
-CREATE OR REPLACE TEMP VIEW exploded_events AS
-SELECT *, explode(items) AS item
-FROM parsed_events;
-
-SELECT * FROM exploded_events WHERE size(items) > 2
+CREATE
+OR REPLACE TEMP VIEW exploded_events AS
+SELECT
+  *,
+  explode(items) AS item
+FROM
+  parsed_events;
+SELECT
+  *
+FROM
+  exploded_events
+WHERE
+  size(items) > 2
 
 -- COMMAND ----------
 
@@ -185,11 +225,14 @@ DESCRIBE exploded_events
 
 -- COMMAND ----------
 
-SELECT user_id,
+SELECT
+  user_id,
   collect_set(event_name) AS event_history,
   array_distinct(flatten(collect_set(items.item_id))) AS cart_history
-FROM exploded_events
-GROUP BY user_id
+FROM
+  exploded_events
+GROUP BY
+  user_id
 
 -- COMMAND ----------
 
@@ -222,14 +265,23 @@ GROUP BY user_id
 
 -- COMMAND ----------
 
-CREATE OR REPLACE TEMP VIEW item_purchases AS
-
-SELECT * 
-FROM (SELECT *, explode(items) AS item FROM sales) a
-INNER JOIN item_lookup b
-ON a.item.item_id = b.item_id;
-
-SELECT * FROM item_purchases
+CREATE
+OR REPLACE TEMP VIEW item_purchases AS
+SELECT
+  *
+FROM
+  (
+    SELECT
+      *,
+      explode(items) AS item
+    FROM
+      sales
+  ) a
+  INNER JOIN item_lookup b ON a.item.item_id = b.item_id;
+SELECT
+  *
+FROM
+  item_purchases
 
 -- COMMAND ----------
 
@@ -260,23 +312,25 @@ SELECT * FROM item_purchases
 
 -- COMMAND ----------
 
-SELECT *
-FROM item_purchases
-PIVOT (
-  sum(item.quantity) FOR item_id IN (
-    'P_FOAM_K',
-    'M_STAN_Q',
-    'P_FOAM_S',
-    'M_PREM_Q',
-    'M_STAN_F',
-    'M_STAN_T',
-    'M_PREM_K',
-    'M_PREM_F',
-    'M_STAN_K',
-    'M_PREM_T',
-    'P_DOWN_S',
-    'P_DOWN_K')
-)
+SELECT
+  *
+FROM
+  item_purchases PIVOT (
+    sum(item.quantity) FOR item_id IN (
+      'P_FOAM_K',
+      'M_STAN_Q',
+      'P_FOAM_S',
+      'M_PREM_Q',
+      'M_STAN_F',
+      'M_STAN_T',
+      'M_PREM_K',
+      'M_PREM_F',
+      'M_STAN_K',
+      'M_PREM_T',
+      'P_DOWN_S',
+      'P_DOWN_K'
+    )
+  )
 
 -- COMMAND ----------
 

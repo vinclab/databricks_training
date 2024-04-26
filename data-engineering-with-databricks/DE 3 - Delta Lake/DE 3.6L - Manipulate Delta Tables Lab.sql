@@ -108,7 +108,7 @@ WHEN NOT MATCHED AND b.delicious = true THEN
 -- COMMAND ----------
 
 -- TODO
-<FILL-IN>
+DESCRIBE HISTORY beans
 
 -- COMMAND ----------
 
@@ -178,7 +178,7 @@ SELECT * FROM beans
 
 -- TODO
 CREATE OR REPLACE TEMP VIEW pre_delete_vw AS
-<FILL-IN>
+SELECT * FROM beans VERSION AS OF 4
 
 -- COMMAND ----------
 
@@ -214,7 +214,7 @@ SELECT * FROM pre_delete_vw
 -- COMMAND ----------
 
 -- TODO
-<FILL-IN>
+RESTORE TABLE beans TO VERSION AS of 5
 
 -- COMMAND ----------
 
@@ -251,7 +251,8 @@ DESCRIBE HISTORY beans
 -- COMMAND ----------
 
 -- TODO
-<FILL-IN>
+OPTIMIZE beans
+ZORDER BY name
 
 -- COMMAND ----------
 
@@ -381,6 +382,10 @@ SELECT * FROM beans
 -- MAGIC
 -- MAGIC You can see an example of this by uncommenting and running the following cell that may, or may not, fail
 -- MAGIC (depending on the state of the cache).
+
+-- COMMAND ----------
+
+SELECT * FROM beans@v1
 
 -- COMMAND ----------
 

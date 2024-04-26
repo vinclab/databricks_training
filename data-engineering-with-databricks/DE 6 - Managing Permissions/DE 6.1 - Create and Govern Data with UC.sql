@@ -73,7 +73,8 @@
 
 -- COMMAND ----------
 
-CREATE CATALOG IF NOT EXISTS ${DA.my_new_catalog}
+-- MAGIC %md
+-- MAGIC CREATE CATALOG IF NOT EXISTS ${DA.my_new_catalog}
 
 -- COMMAND ----------
 
@@ -167,9 +168,9 @@ SELECT * FROM agg_heartrate
 
 -- COMMAND ----------
 
--- GRANT USAGE ON CATALOG ${DA.my_new_catalog} TO `account users`;
--- GRANT USAGE ON SCHEMA example TO `account users`;
--- GRANT SELECT ON VIEW agg_heartrate to `account users`
+GRANT USAGE ON CATALOG ${DA.my_new_catalog} TO `account users`;
+GRANT USAGE ON SCHEMA example TO `account users`;
+GRANT SELECT ON VIEW agg_heartrate to `account users`
 
 -- COMMAND ----------
 
